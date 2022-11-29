@@ -58,6 +58,34 @@ Nästa steg:
     - 
 
 
+Added both of the above.
+
+An issue is that currently, the energy runs out of the world, as cost of living is deducted, but no new energy
+apart from new random individuals is added. This means everybody will die eventually. So how do we fill upp?
+
+One possibility could be "The Sun" - an area of the land that provides beings with the energy while in it, 
+and moves gradually around. We could even add a special sense, for the sun, to see if the beings learn to follow
+the sun (some should at least). That would be a solution to an earlier quest.
+
+A being that then follows the sun would live for ever... if not eaten by other!
+
+Yes, let's do this!
+
+- Add the sun as concept
+- Add the sun sense
+
+
+OK, in some trouble now. I've been noticing, ever since I added the internal sense and the concept of duplication, that
+Some animal tend to have lots of offspring, without necessarily loosing a lot of energy. Been trying for one day to figure out what is going on.
+Still don't really know, and it is complex. Seems like some changes to the list in senses class do not affect the world class, but 
+I cannot figure out how or why.
+
+Will need to reconsider the approach.
+
+Also, figured out the I'm adding multiple concept values as I do that for each sense, which was not ment. So, back to the drawing board, 
+architecturally, and try and understand:
+- how should concepts, senses and actuators relate to each other
+- who should "own" the content of an entity and thus have the right to change it.
 
 
 Experiment 2
@@ -66,6 +94,9 @@ Artificial need, artificial fear
 
 Alter the world so that individuals with artificial fear / artificial need can appear (risk taking)
 
+Idea - change the amount of eating, so that it becomes dangerous to stay in the same position as somebody.
+
+Currently having some 
 
 
 

@@ -1,4 +1,5 @@
 import random
+import imp.senses
 
 
 ''' What the heck is even a concept? Somthing that appears in the world? I don't know...
@@ -36,71 +37,224 @@ import random
 
 '''
 class Concept:
-    def initiate():
-        pass
 
-    def create_random_dna_contribution():
-        pass
+    def get_value(self, entity):
+        return entity[0][self.id]
 
-    def create_random_state():
-        pass
+    def set_value(self, entity, value):
+        entity[0][self.id] = value
 
+    def add_value(self, entity, value):
+        entity[0][self.id] += value
 
+    def append_value(self, entity, value = None):
+        if value == None:
+            value = self.get_initial_value()
+        entity[0].append(value)
+        #print("Appended value ", value, " for concept ", self.id)
+        # Verify that correct value
+        if self.get_value(entity) != value:
+            print("Error: The appended value {} does not correspond to read value {}", value, self.getValue(entity))
+
+    def get_concept_dna(self, entity, sense):
+        return entity[1][self.id][sense.id]
+
+    def set_concept_dna(self, entity, sense, dna):
+        entity[1][self.id][sense.id] = dna
+
+    def append_concept_dna(self, entity, dna = None):
+        if dna == None:
+            dna = self.get_initial_dna()
+        entity[1].append(dna)
+        # Verify that correct value
+        #for sense in self.senses:
+        #    if self.get_concept_dna(entity, sense) != dna:
+        #        print("Error: The appended dna {} does not correspond to read dna {}", dna, self.getConceptDna(entity))
+
+    def get_initial_dna(self):
+        dna = []
+        for sense in self.senses:
+            dna.append(sense.get_random_sense_dna())
+        
+        return dna
+
+    def get_mutated_concept_dna(self, entity):
+        mutated_dna = []
+
+        for sense in self.senses:
+            sense_dna = self.get_concept_dna(entity, sense)
+            mutated_dna.append(sense.mutate_dna(sense_dna, self.mutation_rate))
+
+        return mutated_dna
+
+    def get_actions(self, entity):
+        actions_array = []
+
+        for sense in self.senses:
+            trigger = sense.get_trigger_value(entity, self)
+            #print("Trigger: ", trigger)
+            actions = sense.get_sense_response_to_trigger(trigger, self.get_concept_dna(entity, sense))
+            #if (len(actions) == 0): continue
+            #print("Identified Actions: ", actions)
+            actions_array.append([sense, actions])
+
+        #print("Actions array: ", actions_array)
+        return actions_array
 
 
 class OneDSpaceConcept(Concept):
     
-    def __init__(self, max_size):
+    def __init__(self, id, max_size):
+        self.id = id
         self.max_size = max_size
+        self.positions = [[] for i in range(self.max_size)]
+        self.senses = []
+        self.senses.append(imp.senses.OneDVisionNoOrientationOnePixelRange())
+
+
+        ### Trying now out a new idea, that concepts should own senses and actuators conected to them.
+        ## Sense is pretty straight forward as concepts only affect one sense (true?). But even if
+        ## There is more, they will all be connected to that one sense.
+        ## But the available actions may have impact on several things and even on other animals.
+        ## So - how to deal with that. For example - vision sense, which is part of OneDSpace context
+        ## does its work based on where animals are in the OneD Space. But it will also be able to
+        ## show other things - still the same tool? How about hearing it is also connected to 
+        ## place in the room, but is quite different than vision. Is that then another sense in the space concept?
+        ## Ok, that may hold!
+        ## Then to the activators. They include moving - pretty given, where animals change their position, which
+        ## is mostly what this concept guides. But then comes the tricky part - let's add animal looks
+        ## to the mix. For this, I will need another container for description of it, so new concept
+        ## But this new concept will need to be used by the vision (or it will need to superseed vision?)
+        ## Or will they both be actually active at the same time, new one being added?
+        ## And then, actuators will be the same, the decision to move, or stay, or to eat. So it would make sense to just have
+        ## It as a part of the same system.
+
+        ## So with all said - how about the interface? Let's start with that - changes to concept values are only done through the
+        ## Conecept itself, by sending in the appropriate entity, and either ask for a value or change (direct or relative)
         
-    def create_random_state(self):
+    def get_initial_value(self):
         return random.randrange(self.max_size)
 
-    def getLeft(self, position):
+    def get_left(self, entity):
+        position = self.get_value(entity)
+        #print("Checked position it is {}", position)
+        #print("Entity is: ", entity)
         if position == 0: 
             return self.max_size - 1
         
         return position - 1
 
-    def getRight(self, position):
+    def get_right(self, entity):
+        position = self.get_value(entity)
         if position == self.max_size - 1: 
             return 0
         
         return position + 1
 
+    #def getPosition(self, entity):
+    #    # Return first number in the concept values of the entity
+    #    return entity[0][0]
+
+    ## Copied from the 
+    def append_value(self, entity, value = None):
+        super().append_value(entity, value)
+        self.positions[self.get_value(entity)].append(entity)
+
+    def set_value(self, entity, position, new_entity = False):
+        current_position = self.get_value(entity)
+        #print("Moving position from ", current_position, " to ", position)
+        # Remove current position from the position array
+        if (new_entity == False):
+           self.positions[current_position].remove(entity)
+        # Add entity in the new position
+        self.positions[position].append(entity)
+        super().set_value(entity, position)
+
+    def entity_exist_to_left(self, entity):
+        position_left = self.get_left(entity)
+        if len(self.positions[position_left]) > 0:
+            return True
+
+        return False
+    
+    def entity_exist_to_right(self, entity):
+        position_right = self.get_right(entity)
+        if len(self.positions[position_right]) > 0:
+            return True
+
+        return False
+
+    def entity_exist_in_place(self, entity):
+        position = self.get_value(entity)
+        if len(self.positions[position]) > 1:
+            return True
+
+        return False
+
+    def get_entities_in_position(self, position):
+        return self.positions[position]
+
 
 class EnergyConcept(Concept):
 
-    def __init__(self, maxEnergyForNewBeing):
-        self.maxEnergyForNewBeing = maxEnergyForNewBeing
+    def __init__(self, id, max_energy):
+        self.id = id
+        self.max_energy = max_energy
+        self.senses = []
+        self.senses.append(imp.senses.InternalEnergy())
 
-    def create_random_dna_contribution(self):
-        return 0
+    def get_initial_value(self):
+        return random.randrange(self.max_energy)
 
-    def create_random_state(self):
-        return random.randrange(self.maxEnergyForNewBeing)
 
-class AgeConcept(Concept):
+class WorldConcept(Concept):
 
-    def __init__(self):
+    # This should be the "world concept", keeping note of things that are external to the 
+    # animal, but still tied to it, like age, number etc.
+    # Energy, position etc could be considered this, but I don't know right now.
+
+    def __init__(self, id, world):
+        self.id = id
         self.age = 0
+        self.entity_id_counter = 0
+        self.world = world
+        self.senses = []
 
-    def create_random_dna_contribution(self):
-        return []
+    def get_initial_value(self):
+        self.entity_id_counter += 1
+        return [self.entity_id_counter, self.age]
 
-    def create_random_state(self):
-        return self.age
-
-    def getOldestAnimals(self, amount, world):
+    def get_oldest_animals(self, amount):
 
         oldestAnimals = []
-        for entity in world.population:
+        for entity in self.world.population:
             for pos in range(amount):
                 if pos >= len(oldestAnimals):
                     oldestAnimals.append(entity)
                     break
-                elif oldestAnimals[pos][0][world.AGE] < entity[0][world.AGE]:
+                elif oldestAnimals[pos][0][self.world.WORLD][1] < entity[0][self.world.WORLD][1]:
                     oldestAnimals.insert(pos, entity)
                     break
 
         return oldestAnimals[:10]
+
+ #   def set_entity_id(self, entity):
+ #       world_stat = self.get_value(entity)
+ #       world_stat[0] = self.world.next_entity_id()
+ #       self.set_value(entity, world_stat)
+
+ #   def set_new_entity_age(self, entity):
+ #       world_stat = self.get_value(entity)
+ #       world_stat[1] = 0 # Set age to 0
+ #       self.set_value(entity, world_stat)
+
+    def get_entity_id(self, entity):
+        return self.get_value(entity)[0]
+
+    def get_entity_age(self, entity):
+        return self.get_value(entity)[1]
+
+    def increase_age(self, entity):
+        world_stat = self.get_value(entity)
+        world_stat[1] += 1 # Increases age, which is stored as parameter 1 by 1
+        self.set_value(entity, world_stat)
