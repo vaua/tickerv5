@@ -16,7 +16,12 @@ class Sense():
         pass
 
     def mutate_dna(self, dna, mutation_rate):
+        
         for gene in dna:
+            if len(gene) < 2:
+                print("Found a strange gene: ", gene, " in dna: ", dna)
+                exit()
+                                
             if (random.randint(0, 99) < mutation_rate):
                 gene[0] += 1
                 if gene[0] == self.trigger_range[1]:
@@ -76,10 +81,10 @@ class Sense():
 
 class OneDVisionNoOrientationOnePixelRange(Sense):
 
-    def __init__(self):
+    def __init__(self, id):
 
         ## Constants
-        self.id = 0
+        self.id = id
         self.cost_of_move = 1
         self.cost_of_eating = 3
         self.benefit_of_eating = 20
@@ -154,6 +159,12 @@ class OneDVisionNoOrientationOnePixelRange(Sense):
                     if e[1] == world.chosen_dna:
                         print("I'm pepe, at position ", entity[0][0], " being eaten!!!, now energy is ", e[0][1])
 
+                    if (world.world.get_entity_id(entity) == world.extra_log_entity_id):
+                        print("The extra logged entity ", world.extra_log_entity_id, " is eating.")
+                    if (world.world.get_entity_id(e) == world.extra_log_entity_id):
+                        print("The extra logged entity ", world.extra_log_entity_id, " is being eaten.")
+
+
             ## Goind right
             elif action == 3:
                 world.position.set_value(entity, world.position.get_right(entity))
@@ -164,12 +175,12 @@ class OneDVisionNoOrientationOnePixelRange(Sense):
 
 class InternalEnergy(Sense):
 
-    def __init__(self):
+    def __init__(self, id):
         
         ## Constants
-        self.id = 0
+        self.id = id
         self.energy_ratio_given_to_offspring = 0.3
-        self.cost_of_birth = 5
+        self.cost_of_birth = 50
         self.minimal_energy_needed = 10
         
         ## Trigger input consist of three bits - 8 values. Each value is a span of energy (max / 8)
@@ -198,7 +209,7 @@ class InternalEnergy(Sense):
         for action in actions:
             #print("Action: ", action)
 
-            if action > 6:
+            if action > 5:
                 ## We're giving birth!
                 parent_energy = world.energy.get_value(entity)
                 energy_to_offspring = int(parent_energy * self.energy_ratio_given_to_offspring)
@@ -209,13 +220,17 @@ class InternalEnergy(Sense):
                 dna = copy.deepcopy(entity[1])
                 new_entity = world.create_entity(dna, True)
                 world.energy.set_value(new_entity, energy_to_offspring)
+                world.world.set_generation(new_entity, world.world.get_generation(entity) + 1)
                 # No mutation for now
                 world.entities_to_add.append(new_entity)
 
                 world.energy.add_value(entity, -energy_to_offspring)
                 world.energy.add_value(entity, -self.cost_of_birth)
+                if (world.world.get_entity_id(entity) == world.extra_log_entity_id):
+                    print("The extra logged entity ", world.extra_log_entity_id, " gave birth, ", energy_to_offspring, " given to baby.")
+                
                 #entity[0][world.ENERGY] = 0
                 #if (entity == world.chosen_dna):
                     #print("The chosen one after spawning: ", entity)
 
-                #print("New being created! Parent ", world.population.index(entity), " energy before: ", parent_energy, ", after: ", entity[0], " offspring: ", new[0])
+                #print("New being created! Parent ", world.world.get_entity_id(entity), " energy before: ", parent_energy, ", after: ", world.energy.get_value(entity), " offspring: ", world.energy.get_value(new_entity))

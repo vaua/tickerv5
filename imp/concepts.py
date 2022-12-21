@@ -78,14 +78,13 @@ class Concept:
         
         return dna
 
-    def get_mutated_concept_dna(self, entity):
-        mutated_dna = []
-
+    def mutate_concept_dna(self, entity, mutation_rate):
+        
         for sense in self.senses:
             sense_dna = self.get_concept_dna(entity, sense)
-            mutated_dna.append(sense.mutate_dna(sense_dna, self.mutation_rate))
-
-        return mutated_dna
+            if len(sense_dna) < 2:
+                print("Short DNA found, ", sense_dna, " in entity ", entity[0][2][0], "\n")
+            self.set_concept_dna(entity, sense, sense.mutate_dna(sense_dna, mutation_rate))
 
     def get_actions(self, entity):
         actions_array = []
@@ -109,7 +108,7 @@ class OneDSpaceConcept(Concept):
         self.max_size = max_size
         self.positions = [[] for i in range(self.max_size)]
         self.senses = []
-        self.senses.append(imp.senses.OneDVisionNoOrientationOnePixelRange())
+        self.senses.append(imp.senses.OneDVisionNoOrientationOnePixelRange(0))
 
 
         ### Trying now out a new idea, that concepts should own senses and actuators conected to them.
@@ -194,6 +193,10 @@ class OneDSpaceConcept(Concept):
     def get_entities_in_position(self, position):
         return self.positions[position]
 
+    def remove_entity(self, entity):
+        position = self.get_value(entity)
+        self.positions[position].remove(entity)
+
 
 class EnergyConcept(Concept):
 
@@ -201,7 +204,7 @@ class EnergyConcept(Concept):
         self.id = id
         self.max_energy = max_energy
         self.senses = []
-        self.senses.append(imp.senses.InternalEnergy())
+        self.senses.append(imp.senses.InternalEnergy(0))
 
     def get_initial_value(self):
         return random.randrange(self.max_energy)
@@ -216,13 +219,14 @@ class WorldConcept(Concept):
     def __init__(self, id, world):
         self.id = id
         self.age = 0
+        self.generation = 0
         self.entity_id_counter = 0
         self.world = world
         self.senses = []
 
     def get_initial_value(self):
         self.entity_id_counter += 1
-        return [self.entity_id_counter, self.age]
+        return [self.entity_id_counter, self.age, self.generation, {}]
 
     def get_oldest_animals(self, amount):
 
@@ -236,17 +240,23 @@ class WorldConcept(Concept):
                     oldestAnimals.insert(pos, entity)
                     break
 
-        return oldestAnimals[:10]
+        return oldestAnimals[:amount]
 
- #   def set_entity_id(self, entity):
- #       world_stat = self.get_value(entity)
- #       world_stat[0] = self.world.next_entity_id()
- #       self.set_value(entity, world_stat)
+    def get_highest_generation(self):
+        oldest_generation = 0
+        for entity in self.world.population:
+            if self.get_generation(entity) > oldest_generation:
+                oldest_generation = self.get_generation(entity)
+        
+        return oldest_generation
+    
+    def get_entities_with_generation(self, generation):
+        entities = []
+        for entity in self.world.population:
+            if self.get_generation(entity) == generation:
+                entities.append(entity)
 
- #   def set_new_entity_age(self, entity):
- #       world_stat = self.get_value(entity)
- #       world_stat[1] = 0 # Set age to 0
- #       self.set_value(entity, world_stat)
+        return entities
 
     def get_entity_id(self, entity):
         return self.get_value(entity)[0]
@@ -258,3 +268,25 @@ class WorldConcept(Concept):
         world_stat = self.get_value(entity)
         world_stat[1] += 1 # Increases age, which is stored as parameter 1 by 1
         self.set_value(entity, world_stat)
+
+    def get_generation(self, entity):
+        return self.get_value(entity)[2]
+
+    def set_generation(self, entity, generation):
+        world_stat = self.get_value(entity)
+        world_stat[2] = generation # Increases age, which is stored as parameter 1 by 1
+        self.set_value(entity, world_stat)
+
+    def get_last_actions(self, entity, concept):
+        #print("Fetching last action is ", self.get_value(entity)[2])
+        if (concept in self.get_value(entity)[3]):
+            return self.get_value(entity)[3][concept]
+        else:
+            return []
+
+    def set_last_actions(self, entity, concept, actions):
+        world_stat = self.get_value(entity)
+        world_stat[3][concept] = actions
+        #print("Setting Last action to: ", world_stat[2])
+        self.set_value(entity, world_stat)
+
