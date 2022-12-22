@@ -316,6 +316,7 @@ class World:
         replenishing_time = (replenishing_done - drawing_done)
 
         tick_time = time.time() - tick_start_time
-        print("Tick ", self.stats_tick, " time: ", "{:.4f}".format(tick_time), ", action list: ", "{:.4f}".format(get_action_list_time), " execution: ", "{:.4f}".format(action_execution_time), " shaping: ", "{:.4f}".format(population_shaping_time), " drawing: ", "{:.4f}".format(drawing_time), " replenishin: ", "{:.4f}".format(replenishing_time), " Births: ", len(self.entities_to_add), " Max Gen: ", self.world.get_highest_generation())
+        high_gen, ave_gen = self.world.get_highest_generation()
+        print("Tick ", self.stats_tick, " time: ", "{:.4f}".format(tick_time), ", action list: ", "{:.4f}".format(get_action_list_time), " execution: ", "{:.4f}".format(action_execution_time), " shaping: ", "{:.4f}".format(population_shaping_time), " drawing: ", "{:.4f}".format(drawing_time), " replenishin: ", "{:.4f}".format(replenishing_time), " Births: ", len(self.entities_to_add), " Max Gen: ", high_gen, " Avg: ", "{:.2f}".format(ave_gen))
         
         #repeat

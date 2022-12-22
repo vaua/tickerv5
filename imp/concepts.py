@@ -243,12 +243,16 @@ class WorldConcept(Concept):
         return oldestAnimals[:amount]
 
     def get_highest_generation(self):
-        oldest_generation = 0
+        highest_generation = 0
+        average = 0
         for entity in self.world.population:
-            if self.get_generation(entity) > oldest_generation:
-                oldest_generation = self.get_generation(entity)
+            enetity_gen = self.get_generation(entity)
+            average += enetity_gen
+            if  enetity_gen > highest_generation:
+                highest_generation = enetity_gen
         
-        return oldest_generation
+        average /= len(self.world.population)
+        return highest_generation, average
     
     def get_entities_with_generation(self, generation):
         entities = []
